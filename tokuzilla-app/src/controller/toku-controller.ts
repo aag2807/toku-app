@@ -15,12 +15,6 @@ export class TokuController extends BaseController {
 			return this.Ok( "Welcome to Tokuzilla API" );
 		} );
 
-		app.get( "/:id", async( ctx ) =>
-		{
-			const id = ctx.getParam( "id" );
-			return this.Ok( {id} );
-		} );
-
 		app.get( this.ROUTE_PREFIX, async( ctx: Context ) =>
 		{
 			const page = ctx.getParam( 'page' ) || 1;

@@ -2,6 +2,8 @@ import * as http from "node:http";
 import {BaseController} from "../controller/base-controller";
 import {Context} from "./context";
 import {bodyParser} from "../middleware/body-parser.middleware";
+import {corsMiddleware} from "../middleware/cors.middleware";
+import {cacheMiddleware} from "../middleware/in-memory-cache.middleware";
 
 type ResponseFunction = ( ctx: Context ) => Promise<any>|any;
 
@@ -42,6 +44,8 @@ export class App {
 	constructor()
 	{
 		this.use( bodyParser );
+		this.use( corsMiddleware );
+		this.use( cacheMiddleware );
 
 		// needed in order to maintain the correct context
 		this.fetch = this.fetch.bind( this );
