@@ -1,6 +1,7 @@
 import {BaseController} from "./base-controller";
 import {App} from "../lib/app";
 import {TokusatsuService} from "../service/tokusatsu-service";
+import {Context} from "../lib/context";
 
 export class TokuController extends BaseController {
 	private readonly ROUTE_PREFIX: Readonly<string> = '/toku';
@@ -14,7 +15,13 @@ export class TokuController extends BaseController {
 			return this.Ok( "Welcome to Tokuzilla API" );
 		} );
 
-		app.get( this.ROUTE_PREFIX, async( ctx ) =>
+		app.get( "/:id", async( ctx ) =>
+		{
+			const id = ctx.getParam( "id" );
+			return this.Ok( {id} );
+		} );
+
+		app.get( this.ROUTE_PREFIX, async( ctx: Context ) =>
 		{
 			const page = ctx.getParam( 'page' ) || 1;
 			const scrapedData = await this.service.scrapePageData( page );

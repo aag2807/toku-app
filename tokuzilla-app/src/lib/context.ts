@@ -1,16 +1,16 @@
-import * as http from "node:http";
-
-type Nullable<T> = T|null;
+import {IncomingMessage, ServerResponse} from "node:http";
 
 export class Context<T = any> {
-	constructor(
-		public path: string,
-		public method: string,
-		public params: Record<string, string>,
-		public body?: Nullable<T>,
-		public headers: http.IncomingHttpHeaders = {}
-	)
+	public request: IncomingMessage;
+	public response: ServerResponse;
+	public params: Record<string, string>;
+	public body?: T;
+
+	constructor( request: IncomingMessage, response: ServerResponse, params: Record<string, string> )
 	{
+		this.request = request;
+		this.response = response;
+		this.params = params;
 	}
 
 	public getParam( key: string ): any

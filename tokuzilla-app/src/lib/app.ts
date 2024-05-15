@@ -1,8 +1,13 @@
-import {Context} from "./context";
 import * as http from "node:http";
 import {BaseController} from "../controller/base-controller";
+import {Context} from "./context";
+import {bodyParser} from "../middleware/body-parser.middleware";
 
 type ResponseFunction = ( ctx: Context ) => Promise<any>|any;
+
+interface Middleware {
+	( ctx: Context, next: () => Promise<void> ): Promise<void>;
+}
 
 interface RouteHandler {
 	regex: RegExp;
@@ -32,14 +37,27 @@ function routeToRegExp( route: string ): RegExp
 
 export class App {
 	private static routes: Routes = INITIAL_ROUTE_VALUES;
+	private middlewares: Middleware[] = [];
 
-	public async fetch( request: http.IncomingMessage, response: http.ServerResponse ): Promise<any>
+	constructor()
 	{
-		response.setHeader( 'Access-Control-Allow-Origin', '*' );
+		this.use( bodyParser );
 
+		// needed in order to maintain the correct context
+		this.fetch = this.fetch.bind( this );
+		this.runMiddlewares = this.runMiddlewares.bind( this );
+	}
+
+	public use( middleware: Middleware ): void
+	{
+		this.middlewares.push( middleware );
+	}
+
+	public async fetch( request: http.IncomingMessage, response: http.ServerResponse ): Promise<void>
+	{
 		const parsedUrl = new URL( request.url!, `http://${request.headers.host}` );
-		const path: string = parsedUrl.pathname!;
-		const method: 'GET'|'POST'|'PUT'|'DELETE' = request.method! as any;
+		const path = parsedUrl.pathname;
+		const method = request.method as 'GET'|'POST'|'PUT'|'DELETE';
 		const queryParams = Object.fromEntries( parsedUrl.searchParams.entries() );
 
 		for( const route of App.routes[method] )
@@ -48,16 +66,22 @@ export class App {
 			if( match )
 			{
 				const params = {...queryParams, ...match.groups};
-				const ctx = new Context( path, method, params, null );
-				const result = await route.handler( ctx );
-
-				response.writeHead( result.statusCode, {"Content-Type": 'Application/json'} );
-				return response.end( JSON.stringify( result ) );
+				const ctx = new Context( request, response, params );
+				const result = await this.runMiddlewares( ctx, route.handler );
+				response.writeHead( result.statusCode, {"Content-Type": "application/json"} );
+				response.end( JSON.stringify( result ) );
+				return;
 			}
 		}
 
 		response.writeHead( 404, {"Content-Type": "application/json"} );
-		return response.end( JSON.stringify( {message: "Resource not found"} ) );
+		response.end( JSON.stringify( {message: "Resource not found"} ) );
+	}
+
+	public registerRoute( method: 'GET'|'POST'|'PUT'|'DELETE', path: string, callback: ResponseFunction )
+	{
+		const regex = routeToRegExp( path );
+		App.routes[method].push( {regex, handler: callback} );
 	}
 
 	public get( path: string, callback: ResponseFunction )
@@ -80,12 +104,6 @@ export class App {
 		this.registerRoute( 'DELETE', path, callback );
 	}
 
-	private registerRoute( method: 'GET'|'POST'|'PUT'|'DELETE', path: string, callback: ResponseFunction )
-	{
-		const regex = routeToRegExp( path );
-		App.routes[method].push( {regex, handler: callback} );
-	}
-
 	public registerControllers( ...controllers: BaseController[] )
 	{
 		controllers.forEach( controller =>
@@ -93,4 +111,30 @@ export class App {
 			controller.registerRoutes( this );
 		} );
 	}
+
+	private async runMiddlewares( ctx: Context, handler: ResponseFunction ): Promise<any>
+	{
+		let index = 0;
+		let lastResult: any;
+		const next = async(): Promise<void> =>
+		{
+			if( index < this.middlewares.length )
+			{
+				const currentMiddleware = this.middlewares[index++];
+				await currentMiddleware( ctx, next );
+			}
+			else
+			{
+				lastResult = await handler( ctx );
+			}
+		};
+		await next();
+
+		return lastResult;
+	}
+
 }
+
+
+
+
