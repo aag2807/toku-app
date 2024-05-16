@@ -1,32 +1,46 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import './index.css'
-import {createBrowserRouter, RouterProvider} from "react-router-dom";
+import {createBrowserRouter, Outlet, RouterProvider} from "react-router-dom";
 import {Home} from "./pages/Home.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import Details from "./pages/Details.tsx";
+import NavigationBottomBar from "./components/NavigationBottomBar.tsx";
+import Navbar from "./components/Navbar.tsx";
 
-const router = createBrowserRouter( [
+const Layout = () => (
+	<div className="min-h-screen w-screen bg-white flex flex-col pb-[100px] relative">
+		<Navbar/>
+		<Outlet />
+		<NavigationBottomBar />
+	</div>
+);
+
+const router = createBrowserRouter([
 	{
 		path: "/",
-		element: <Home/>,
+		element: <Layout />,
+		children: [
+			{
+				path: "",
+				element: <Home />,
+			},
+			{
+				path: "details",
+				element: <Details />,
+			},
+			{
+				path: "*",
+				element: <NotFound />,
+			},
+		],
 	},
-	{
-		path: "/details",
-		element: <Details/>,
-	},
-	{
-		path: "*",
-		element: <NotFound/>
-	},
-] );
+]);
 
 
 ReactDOM.createRoot( document.getElementById( 'root' )! ).render(
 	<React.StrictMode>
-		<main className={"min-h-screen min-w-screen bg-white flex flex-col pb-10"}>
-			<RouterProvider router={router}/>
-		</main>
+		<RouterProvider router={router} />
 	</React.StrictMode>
 	,
 )

@@ -145,8 +145,6 @@ export const Home: React.FC = () =>
 
 	return (
 		<section className={"px-4 pt-3"}>
-			<Navbar/>
-
 			<h1 className={"text-2xl font-light text-left"}>Welcome Rider.</h1>
 			<p className="leading text-gray-500 font-light text-[14px]">Watch your favorite Tokusatsu shows here!</p>
 

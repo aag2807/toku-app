@@ -3,7 +3,7 @@ import {BaseController} from "../controller/base-controller";
 import {Context} from "./context";
 import {bodyParser} from "../middleware/body-parser.middleware";
 import {corsMiddleware} from "../middleware/cors.middleware";
-import {cacheMiddleware} from "../middleware/in-memory-cache.middleware";
+import {GLOBAL_CACHE} from "../middleware/in-memory-cache.middleware";
 
 type ResponseFunction = ( ctx: Context ) => Promise<any>|any;
 
@@ -45,7 +45,6 @@ export class App {
 	{
 		this.use( bodyParser );
 		this.use( corsMiddleware );
-		this.use( cacheMiddleware );
 
 		// needed in order to maintain the correct context
 		this.fetch = this.fetch.bind( this );
@@ -64,16 +63,31 @@ export class App {
 		const method = request.method as 'GET'|'POST'|'PUT'|'DELETE';
 		const queryParams = Object.fromEntries( parsedUrl.searchParams.entries() );
 
+		const methodIsGET = method == "GET";
+
 		for( const route of App.routes[method] )
 		{
 			const match = route.regex.exec( path );
-			if( match )
+			if( methodIsGET && match )
 			{
+				if( GLOBAL_CACHE.get( request.url! ) )
+				{
+					const cachedData = GLOBAL_CACHE.get( request.url! );
+					response.writeHead( cachedData.statusCode, {"Content-Type": "application/json"} );
+					response.end( JSON.stringify( cachedData ) );
+					return;
+				}
 				const params = {...queryParams, ...match.groups};
 				const ctx = new Context( request, response, params );
 				const result = await this.runMiddlewares( ctx, route.handler );
 				response.writeHead( result.statusCode, {"Content-Type": "application/json"} );
 				response.end( JSON.stringify( result ) );
+
+				if( methodIsGET && [200, 204, 202].includes( result.statusCode ) && !GLOBAL_CACHE.get( ctx.request.url! ) )
+				{
+					console.log('caching response')
+					GLOBAL_CACHE.set( ctx.request.url!, result );
+				}
 				return;
 			}
 		}
@@ -136,7 +150,6 @@ export class App {
 
 		return lastResult;
 	}
-
 }
 
 

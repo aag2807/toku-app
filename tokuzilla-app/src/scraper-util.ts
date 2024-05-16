@@ -47,6 +47,7 @@ export class ScraperUtil {
 		const description = postDetails.find( 'p' ).text();
 		const strippedDescription = this.stripHTML( description );
 		const videoPlayerData = $( '.player iframe' );
+		const imgSrc = $( 'img' );
 
 		const urls: string[] = [];
 		videoPlayerData.each( ( index, element ) =>
@@ -55,10 +56,21 @@ export class ScraperUtil {
 			urls.push( src );
 		} );
 
+		const images: string[] = [];
+		imgSrc.each( ( index, element ) =>
+		{
+			const src = element.attribs.src;
+			if( !src.includes( "data:image/svg+xml" ) && !src.includes("logo-tokuzl"))
+			{
+				images.push( src );
+			}
+		} );
+
 		return {
 			title,
 			description: strippedDescription,
-			videoUrls: urls
+			videoUrls: urls,
+			imgSrc: images[0] || ""
 		};
 	}
 

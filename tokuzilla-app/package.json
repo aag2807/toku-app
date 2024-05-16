@@ -6,7 +6,8 @@
     "start": "webpack --mode development --watch",
     "build": "webpack --mode production",
     "run:dev": "NODE_ENV=development nodemon dist/bundle.js",
-    "test:scraper": "ts-node src/scraper-test.ts"
+    "test:scraper": "ts-node src/scraper-test.ts",
+    "build:dev": "webpack --mode development"
   },
   "keywords": [],
   "author": "",

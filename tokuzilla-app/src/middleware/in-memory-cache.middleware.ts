@@ -9,20 +9,36 @@ interface CacheEntry {
 
 class SimpleCache {
 	private cache: Record<string, CacheEntry> = {};
-	private readonly ttl: number; // Time to live in milliseconds
+	private readonly ttl: number;
+	private cleanupInterval: NodeJS.Timeout;
 
 	constructor( ttl: number = ONE_MINUTE * 5 )
 	{
 		this.ttl = ttl;
+		this.cleanupInterval = setInterval( () => this.cleanupExpiredEntries(), ttl );
+	}
+
+	cleanupExpiredEntries()
+	{
+		const now = Date.now();
+		Object.keys( this.cache ).forEach( key =>
+		{
+			if( this.cache[key].expiry <= now )
+			{
+				delete this.cache[key];
+			}
+		} );
 	}
 
 	get( key: string ): any
 	{
 		const entry = this.cache[key];
-		if( entry && (entry.expiry > Date.now()) )
+		if( entry && entry.expiry > Date.now() )
 		{
 			return entry.data;
 		}
+
+		this.cache[key] = undefined as any;
 		return null;
 	}
 
@@ -34,26 +50,9 @@ class SimpleCache {
 
 	clear(): void
 	{
+		clearInterval( this.cleanupInterval );
 		this.cache = {};
 	}
 }
 
-const cache = new SimpleCache( 60000 );  // Cache data for 1 minute
-
-export const cacheMiddleware = async( ctx: Context, next: () => Promise<void> ): Promise<void> =>
-{
-	const cachedResponse = cache.get( ctx.request.url! );
-	if( cachedResponse )
-	{
-		ctx.response.writeHead( 200, {"Content-Type": "application/json"} );
-		ctx.response.end( JSON.stringify( cachedResponse ) );
-		return;
-	}
-
-	await next();
-
-	if( ctx.response.statusCode === 200 )
-	{
-		cache.set( ctx.request.url!, ctx.body );
-	}
-};
+export const GLOBAL_CACHE = new SimpleCache( ONE_MINUTE );  // Cache data for 1 minute

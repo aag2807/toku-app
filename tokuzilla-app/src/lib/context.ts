@@ -6,6 +6,8 @@ export class Context<T = any> {
 	public params: Record<string, string>;
 	public body?: T;
 
+	public responseBody: any;
+
 	constructor( request: IncomingMessage, response: ServerResponse, params: Record<string, string> )
 	{
 		this.request = request;

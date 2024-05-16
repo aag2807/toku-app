@@ -1,4 +1,4 @@
-const childProcess = require('child_process');
+const {spawn} = require('child_process');
 
 module.exports = class WatchFileAndRun {
     constructor() {
@@ -15,16 +15,7 @@ module.exports = class WatchFileAndRun {
 
             console.log('Starting the new process\n\n');
             setTimeout(() => {
-                this.currentProcess = childProcess.exec('node ./dist/bundle.js', (error, stdout, stderr) => {
-                    if (error) {
-                        console.error(`exec error: ${error}`);
-                        return;
-                    }
-
-                    console.log(`stdout: ${stdout}`);
-                    console.error(`stderr: ${stderr}`);
-                });
-
+                this.currentProcess = spawn('node', ['./dist/bundle.js'], {stdio: 'inherit'});
             }, 200);
         });
     }
