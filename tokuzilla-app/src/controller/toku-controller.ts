@@ -2,6 +2,7 @@ import {BaseController} from "./base-controller";
 import {App} from "../lib/app";
 import {TokusatsuService} from "../service/tokusatsu-service";
 import {Context} from "../lib/context";
+import {DataResponse} from "../core/interfaces/data-response";
 
 export class TokuController extends BaseController {
 	private readonly ROUTE_PREFIX: Readonly<string> = '/toku';
@@ -30,5 +31,15 @@ export class TokuController extends BaseController {
 
 			return this.Ok( scrapedData );
 		} )
+
+		app.get( `${this.ROUTE_PREFIX}/get-episode`, async( ctx ) =>
+		{
+			const url = ctx.getParam( 'episodeUrl' );
+
+			const episode = await this.service.getEpisodeFromUrl( url );
+			const response: DataResponse<string> = {Data: episode}
+
+			return this.Ok( response );
+		} );
 	}
 }

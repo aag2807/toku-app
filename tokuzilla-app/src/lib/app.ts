@@ -3,7 +3,6 @@ import {BaseController} from "../controller/base-controller";
 import {Context} from "./context";
 import {bodyParser} from "../middleware/body-parser.middleware";
 import {corsMiddleware} from "../middleware/cors.middleware";
-import {GLOBAL_CACHE} from "../middleware/in-memory-cache.middleware";
 
 type ResponseFunction = ( ctx: Context ) => Promise<any>|any;
 
@@ -34,6 +33,7 @@ function routeToRegExp( route: string ): RegExp
 {
 	const paramRegex = /:([a-zA-Z]+)/g;
 	const regexRoute = route.replace( paramRegex, ( match, p1 ) => `(?<${p1}>[^/]+)` );
+
 	return new RegExp( `^${regexRoute}$` );
 }
 
@@ -43,8 +43,8 @@ export class App {
 
 	constructor()
 	{
-		this.use( bodyParser );
 		this.use( corsMiddleware );
+		this.use( bodyParser );
 
 		// needed in order to maintain the correct context
 		this.fetch = this.fetch.bind( this );
@@ -70,24 +70,11 @@ export class App {
 			const match = route.regex.exec( path );
 			if( methodIsGET && match )
 			{
-				if( GLOBAL_CACHE.get( request.url! ) )
-				{
-					const cachedData = GLOBAL_CACHE.get( request.url! );
-					response.writeHead( cachedData.statusCode, {"Content-Type": "application/json"} );
-					response.end( JSON.stringify( cachedData ) );
-					return;
-				}
 				const params = {...queryParams, ...match.groups};
 				const ctx = new Context( request, response, params );
 				const result = await this.runMiddlewares( ctx, route.handler );
 				response.writeHead( result.statusCode, {"Content-Type": "application/json"} );
 				response.end( JSON.stringify( result ) );
-
-				if( methodIsGET && [200, 204, 202].includes( result.statusCode ) && !GLOBAL_CACHE.get( ctx.request.url! ) )
-				{
-					console.log('caching response')
-					GLOBAL_CACHE.set( ctx.request.url!, result );
-				}
 				return;
 			}
 		}
@@ -96,7 +83,7 @@ export class App {
 		response.end( JSON.stringify( {message: "Resource not found"} ) );
 	}
 
-	public registerRoute( method: 'GET'|'POST'|'PUT'|'DELETE', path: string, callback: ResponseFunction )
+	private registerRoute( method: 'GET'|'POST'|'PUT'|'DELETE', path: string, callback: ResponseFunction )
 	{
 		const regex = routeToRegExp( path );
 		App.routes[method].push( {regex, handler: callback} );

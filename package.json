@@ -1,0 +1,13 @@
+{
+  "name": "tokusatsu",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "run:front": "cd toku-front && npm run dev",
+    "run:back": "cd tokuzilla-app && npm run start"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

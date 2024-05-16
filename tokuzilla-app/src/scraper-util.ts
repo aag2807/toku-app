@@ -4,6 +4,25 @@ import {IScrapedDetails} from "./core/interfaces/scraped-details.interface";
 
 export class ScraperUtil {
 
+	private static getImageSourcesFromDetails( $: cheerio.CheerioAPI ): string[]
+	{
+		const images = $( 'img' );
+
+		const validImages = images.filter( ( index, el ) => {
+			return !!el.attribs['data-src']
+		} )
+		.filter( ( index, el ) =>
+		{
+			const src = el.attributes.find( attr => attr.name == "data-src" )?.value!
+			return !src.includes( "logo-tokuzl" )
+		} )
+
+		return validImages.map( ( index, el ) =>
+		{
+			return el.attributes.find( attr => attr.name == "data-src" )?.value!
+		} ).get();
+	}
+
 	public async scrapePage( url: string ): Promise<IScrapedCard[]>
 	{
 		const response = await fetch( url );
@@ -47,7 +66,6 @@ export class ScraperUtil {
 		const description = postDetails.find( 'p' ).text();
 		const strippedDescription = this.stripHTML( description );
 		const videoPlayerData = $( '.player iframe' );
-		const imgSrc = $( 'img' );
 
 		const urls: string[] = [];
 		videoPlayerData.each( ( index, element ) =>
@@ -56,22 +74,32 @@ export class ScraperUtil {
 			urls.push( src );
 		} );
 
-		const images: string[] = [];
-		imgSrc.each( ( index, element ) =>
-		{
-			const src = element.attribs.src;
-			if( !src.includes( "data:image/svg+xml" ) && !src.includes("logo-tokuzl"))
-			{
-				images.push( src );
-			}
-		} );
+		const imageSources = ScraperUtil.getImageSourcesFromDetails( $ );
+		const amountOfEpisodes = $( '.pagination' ).find( 'a' ).length;
 
 		return {
 			title,
 			description: strippedDescription,
 			videoUrls: urls,
-			imgSrc: images[0] || ""
+			imagesSources: imageSources.slice(1),
+			episodesCount: amountOfEpisodes
 		};
+	}
+
+	public async scrapeEpisode( url: string ): Promise<string>
+	{
+		const response = await fetch( url );
+		const html = await response.text();
+		const $ = cheerio.load( html );
+
+		const videoPlayerData = $( '.player iframe' );
+
+		let src = "";
+		videoPlayerData.each( ( index, element ) =>{
+			 src = element.attribs.src;
+		});
+
+		return src;
 	}
 
 	private stripHTML( html: string ): string

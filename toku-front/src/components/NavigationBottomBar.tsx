@@ -5,20 +5,31 @@ import {NavLink} from "react-router-dom";
 const NavigationBottomBar: React.FC = () =>
 {
 	return (
-		<nav className={"w-full border min-h-[75px] bg-white shadow-sm flex items-center fixed bottom-0"}>
-			<NavLink to={"/"} className={isActive => isActive ? "text-red-600  block mx-auto" : " block mx-auto"}>
-				<RiHome2Line className={"text-2xl mx-auto"}/>
+		<nav className="w-full border min-h-[75px] bg-white shadow-sm flex items-center fixed bottom-0">
+			<NavLink
+				to="/"
+				className={( {isActive} ) => (isActive ? 'text-red-600 block mx-auto transition' : 'block mx-auto transition')}
+			>
+				<RiHome2Line className="text-2xl mx-auto"/>
 			</NavLink>
-			<NavLink to={"/"} className={isActive => isActive ? "text-red-600  block mx-auto" : " block mx-auto"}>
-				<RiMovie2Line className={"text-2xl mx-auto"}/>
+			<NavLink
+				to="/movies"
+				className={( {isActive} ) => (isActive ? 'text-red-600 block mx-auto transition' : 'block mx-auto transition')}
+			>
+				<RiMovie2Line className="text-2xl mx-auto"/>
 			</NavLink>
-			<NavLink to={"/"} className={isActive => isActive ? "text-red-600  block mx-auto" : " block mx-auto"}>
-				<RiPlayCircleLine className={"text-2xl mx-auto"}/>
+			<NavLink
+				to="/series"
+				className={( {isActive} ) => (isActive ? 'text-red-600 block mx-auto transition' : 'block mx-auto transition')}
+			>
+				<RiPlayCircleLine className="text-2xl mx-auto"/>
 			</NavLink>
-			<NavLink to={"/"} className={isActive => isActive ? "text-red-600  block mx-auto" : " block mx-auto"}>
-				<RiUser3Line className={"text-2xl mx-auto"}/>
+			<NavLink
+				to="/about"
+				className={( {isActive} ) => (isActive ? 'text-red-600 block mx-auto transition' : 'block mx-auto transition')}
+			>
+				<RiUser3Line className="text-2xl mx-auto"/>
 			</NavLink>
-
 		</nav>
 	);
 };

@@ -21,4 +21,8 @@ export class TokusatsuService
 		return await this.scrapper.scrapeDetailPage( url );
 	}
 
+	public async getEpisodeFromUrl( url:string )
+	{
+		return await this.scrapper.scrapeEpisode( url );
+	}
 }

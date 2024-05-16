@@ -5,9 +5,12 @@ import {get} from "../utils/actions.ts";
 import {FaChevronLeft} from "react-icons/fa";
 import {useNavigate} from "react-router-dom";
 import ichigoError from '../assets/ichigo-error.png'
+import Spinner from "../components/Spinner.tsx";
+import {DataResponse} from "../utils/data-response.ts";
 
 const Details: React.FC = () =>
 {
+	const [decryptedUrl, setDecryptedUrl] = useState<string|null>( null );
 	const [loading, setLoading] = useState<boolean>( false );
 	const [error, setError] = useState<Error|null>( null );
 	const [data, setData] = useState<IScrapedDetails|null>( null );
@@ -21,6 +24,7 @@ const Details: React.FC = () =>
 		}
 		const encryptedUrl = window.location.search.split( '=' )[1];
 		const decryptedUrl = Encrypter.decrypt( encryptedUrl );
+		setDecryptedUrl( decryptedUrl );
 
 		setLoading( true );
 		get<IScrapedDetails>( "http://localhost:3030/toku/get-details?detailUrl=" + decryptedUrl )
@@ -28,7 +32,6 @@ const Details: React.FC = () =>
 			{
 				setData( data.body );
 				setLoading( false );
-				console.log( data )
 			} ).catch( error =>
 		{
 			setError( error );
@@ -36,10 +39,22 @@ const Details: React.FC = () =>
 		} );
 	}, [] );
 
+	const createFilledArray = ( length: number ) => Array.from( {length}, ( _, index ) => index + 1 );
+
+	const getUrlForVideo = ( episode: number ) =>
+	{
+		get<DataResponse<string>>( "http://localhost:3030/toku/get-episode?episodeUrl=" + `${decryptedUrl}?ep=${episode}` )
+			.then( data =>
+			{
+				window.open( data.body.Data, "_blanc" );
+			} );
+	}
+
 	return (
 		<section className={"px-4 pt-3 flex flex-col min-h-full"}>
-			{loading && <p id={"loading"}>Loading...</p>}
-			{!loading && error && <ErrorComponent errorMessage={error.message}/>}
+			{loading && <Spinner/>}
+			{!loading && error && !data && <ErrorComponent errorMessage={error.message}/>}
+
 
 			{!loading && data && (
 				<>
@@ -48,8 +63,20 @@ const Details: React.FC = () =>
 						<span className={"text-[13px] ms-3 inline-block"}>Go Back</span>
 					</div>
 					<h1 className={"text-2xl font-bold mb-10"}>{data.title}</h1>
-					<img src={data.imgSrc} alt="" className={"mb-10"}/>
+
+					{data && data.imagesSources.map( ( image, index ) =>
+						<img src={image} alt={`${data.title}-${index}`} className={"mb-10"}/> )}
+
 					<p className={"text-sm"}>{data.description}</p>
+					{data.episodesCount > 0 && <p className={"mt-2"}>Episode Count: {data.episodesCount}</p>}
+
+					<ul className={"mt-5 flex flex-col gap-5"}>
+						{createFilledArray( data.episodesCount ).map( ( _, index ) =>
+							<li onClick={() => getUrlForVideo( index + 1 )} key={index} className={"text-sm py-5 px-2 w-full bg-[#cf1c2f] rounded text-white transition hover:opacity-75"}>
+								Episode {index + 1}
+							</li>
+						)}
+					</ul>
 				</>
 			)}
 		</section>
