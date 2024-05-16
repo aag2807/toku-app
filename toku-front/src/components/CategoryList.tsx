@@ -91,7 +91,6 @@ const CategoryList: React.FC<ICategoryListProps> = ( props ) =>
 				) )}
 			</SnapList>
 		</div>
-
 	);
 };
 
