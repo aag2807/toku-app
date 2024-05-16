@@ -31,6 +31,7 @@ const Details: React.FC = () =>
 			.then( data =>
 			{
 				setData( data.body );
+				document.title = `Kamen Watcher - ${data.body.title}`;
 				setLoading( false );
 			} ).catch( error =>
 		{

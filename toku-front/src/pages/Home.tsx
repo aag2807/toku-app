@@ -1,4 +1,4 @@
-import React, {useEffect} from 'react';
+import React, {useEffect, useState} from 'react';
 import {useSetDocumentTitle} from "../hooks/useSetDocumentTitle.tsx";
 import Navbar from "../components/Navbar.tsx";
 import TextInput from "../components/TextInput.tsx";
@@ -9,6 +9,8 @@ import CategoryList from "../components/CategoryList.tsx";
 import {usePagination} from "../hooks/usePagination.tsx";
 import {NavigateFunction, useNavigate} from "react-router-dom";
 import {Encrypter} from "../utils/encrypter.util.ts";
+import {get} from "../utils/actions.ts";
+import Spinner from "../components/Spinner.tsx";
 
 const dummy_data: IScrapedCard[] = [
 	{
@@ -95,19 +97,31 @@ const dummy_data: IScrapedCard[] = [
 export const Home: React.FC = () =>
 {
 	useSetDocumentTitle( "Kamen Watcher - Home" );
-	const [data, setCache, _] = useCache( 'series-data', ONE_MINUTE * 3 );
+
+	const [isLoading, setIsLoading] = useState<boolean>( false );
+	const [data, setData] = React.useState<IScrapedCard[]>( [] );
 	const [page, nextPage] = usePagination();
 	const navigate: NavigateFunction = useNavigate();
 
 	useEffect( () =>
 	{
-		if( !data )
+		if( !data.length )
 		{
+			setIsLoading( true );
+			get<IScrapedCard[]>( `http://localhost:3030/toku?page=${page}` ).then( ( response ) =>
+			{
+				setData( response.body );
+				setIsLoading( false );
+			} );
 		}
-	}, [data, setCache] );
+	}, [] );
 
 	const handleScroll = () =>
 	{
+		if(isLoading)
+		{
+			return;
+		}
 		if( window.innerHeight + document.documentElement.scrollTop !== document.documentElement.offsetHeight )
 		{
 			return;
@@ -129,6 +143,12 @@ export const Home: React.FC = () =>
 	{
 		const fetchPaginatedData = async() =>
 		{
+			setIsLoading( true );
+			get<IScrapedCard[]>( `http://localhost:3030/toku?page=${page}` ).then( ( response ) =>
+			{
+				setData( data => [...data, ...response.body] );
+				setIsLoading( false );
+			} );
 		};
 
 		(async() =>
@@ -156,14 +176,13 @@ export const Home: React.FC = () =>
 				<div className="flex flex-row w-full mb-3">
 					<h2 className="text-lg font-light ">Categories</h2>
 					<div className="flex-grow"></div>
-					<button className="text-[14px] font-light text-[#5D0D15]">View All</button>
 				</div>
 
-				<CategoryList/>
+				<CategoryList onCategoryChange={( value ) => console.log( value )}/>
 			</div>
 
 			<div className="flex flex-col w-full gap-5 mt-10">
-				{dummy_data && dummy_data.map( ( element: IScrapedCard ) =>
+				{data.length > 0 && data.map( ( element: IScrapedCard ) =>
 				{
 					return (
 						<div key={element.title} className="p-4 border border-gray-100 min-h-[200px] rounded transition cursor-pointer hover:opacity-75 flex items-center justify-center flex-col">
@@ -182,6 +201,8 @@ export const Home: React.FC = () =>
 						</div>
 					);
 				} )}
+
+				{isLoading && <div className={"mt-10"}><Spinner/></div>}
 			</div>
 
 		</section>
